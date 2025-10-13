@@ -1,6 +1,0 @@
-<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>บทความ</title><link rel="stylesheet" href="/css/style.css"></head><body>
-<main style="max-width:1000px;margin:24px auto;padding:0 16px;"><p><a href="/">← กลับหน้าแรก</a></p>
-<article><h1 id="title"></h1><div><span id="badge"></span> · <time id="date"></time></div>
-<img id="cover" alt="" style="max-width:100%;border-radius:12px;margin:12px 0;"><div id="content" style="line-height:1.7"></div></article></main>
-<script>(async function(){const p=new URLSearchParams(location.search);const slug=p.get('slug');if(!slug){document.getElementById('title').textContent='ไม่พบบทความ';return;}const r=await fetch(`/api/articles/${encodeURIComponent(slug)}`);if(r.status===401){location.href='/login';return;}const a=await r.json();if(!r.ok){document.getElementById('title').textContent='ไม่พบบทความ';return;}document.getElementById('title').textContent=a.title;document.getElementById('badge').textContent=a.badge||'ข่าว';document.getElementById('date').textContent=a.published_at?new Date(a.published_at).toLocaleDateString('th-TH'):'';document.getElementById('cover').src=a.image_url||'https://picsum.photos/1200/600';document.getElementById('content').innerHTML=a.content;})()</script>
-</body></html>
