@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>เข้าสู่ระบบ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+  --bg: #0a0f1a;
+  --card: #121a2b;
+  --muted: #9aa4b2;
+  --text: #e9eef5;
+  --primary: #6d28d9;
+  --accent: #22d3ee;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Prompt', system-ui, -apple-system, 'Segoe UI', Roboto, Arial;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 20% 20%, rgba(59,130,246,0.3), transparent 70%),
+    radial-gradient(circle at 80% 80%, rgba(236,72,153,0.3), transparent 70%),
+    radial-gradient(circle at 50% 100%, rgba(139,92,246,0.25), transparent 80%),
+    linear-gradient(180deg, #0a0f1a 0%, #05070d 100%);
+  background-size: cover;
+  overflow: hidden;
+  position: relative;
+}
+
+/* การ์ด */
+.card {
+  width: min(460px, 92%);
+  background: rgba(18,26,43,0.85);
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid rgba(154,164,178,0.2);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  backdrop-filter: blur(12px);
+}
+
+label {
+  display: block;
+  margin: 10px 0 6px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(154,164,178,0.35);
+  background: rgba(255,255,255,0.03);
+  color: var(--text);
+  transition: all 0.3s ease;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 8px rgba(34,211,238,0.5);
+  background: rgba(255,255,255,0.05);
+}
+
+button {
+  margin-top: 14px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(109,40,217,0.5);
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2 style="margin:0 0 8px">เข้าสู่ระบบ</h2>
+    <p class="muted" style="margin:0 0 16px">กรอกชื่อผู้ใช้และรหัสผ่านที่สมัครไว้</p>
+
+    <form id="loginForm">
+      <label for="username">ชื่อผู้ใช้</label>
+      <input id="username" autocomplete="username" required placeholder="เช่น iambobs">
+      <label for="password">รหัสผ่าน</label>
+      <input id="password" type="password" autocomplete="current-password" required placeholder="••••••••" minlength="6">
+      <button type="submit" id="btnLogin">เข้าสู่ระบบ</button>
+      <p id="msg" class="muted" style="margin-top:8px;"></p>
+    </form>
+
+    <footer>ยังไม่มีบัญชี? <a class="link" href="register.html">สมัครสมาชิก</a></footer>
+  </div>
+
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  const btn = document.getElementById('btnLogin');
+  const msg = document.getElementById('msg');
+
+  msg.textContent = '';
+  if(!username || !password){ msg.textContent = 'กรอกให้ครบ'; return; }
+
+  btn.disabled = true; btn.textContent = 'กำลังเข้าสู่ระบบ...';
+  try{
+    const res = await fetch('/login', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ username, password })
+    });
+
+    if(!res.ok){
+      msg.textContent = (res.status === 401) ? 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' : 'เกิดข้อผิดพลาด';
+      btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ';
+      return;
+    }
+    // สำเร็จ → กลับหน้าแรก (หรือจะไป /admin ถ้าเป็นแอดมินก็ได้)
+    location.href = '/';
+  }catch(err){
+    console.error(err);
+    msg.textContent = 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้';
+    btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ';
+  }
+});
+  </script>
+</body>
+</html>

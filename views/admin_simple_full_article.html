@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Panel — Hero/Ticker + ข่าวเต็มแบบยืนยัน</title>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body{font-family:Prompt,system-ui,-apple-system,Segoe UI,Roboto}
+    .row{display:flex;gap:8px;align-items:center}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .pad{padding:16px}
+    .card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px}
+    .pill{display:inline-block;background:#263143;color:#cfe3ff;border-radius:999px;padding:.2rem .6rem;font-size:.85rem}
+    .btn{padding:.55rem 1rem;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:linear-gradient(90deg,#6a5dd8,#22b8cf);color:#fff;cursor:pointer}
+    .btn.secondary{background:#263143}
+    .btn.danger{background:#b3261e}
+    textarea,input{width:100%;padding:.6rem;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.25);color:#e9f2ff}
+    h2,h3{margin:.2rem 0 1rem}
+    .muted{opacity:.7}
+    .table .row{justify-content:flex-start}
+  </style>
+</head>
+<body>
+  <header class="pad">
+    <div class="row" style="justify-content:space-between">
+      <div class="row"><strong>⚙️ Admin Panel</strong><span class="pill" id="who">loading…</span></div>
+      <div class="row">
+        <a class="btn secondary" href="index.html">กลับหน้าแรก</a>
+        <button class="btn danger" id="logoutBtn">ออกจากระบบ</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="pad">
+    <div class="grid">
+      <!-- Ticker -->
+      <section class="card pad">
+        <h2>แถบ “กำลังฮิต” (Ticker)</h2>
+        <p class="muted">ใส่ 1 บรรทัดต่อ 1 หัวข้อ</p>
+        <textarea id="tickerInput" rows="7" placeholder="ตัวอย่าง:\nPokemon Legends: Z-A ปล่อยตัวอย่างใหม่\nBlue Protocol เปิดเซิร์ฟยุโรปคืนนี้"></textarea>
+        <div class="row" style="margin-top:8px">
+          <button class="btn" id="saveTicker">บันทึก Ticker</button>
+          <span class="pill" id="tickerState">พร้อมแก้ไข</span>
+        </div>
+      </section>
+
+      <!-- Hero -->
+      <section class="card pad">
+        <h2>Hero Slide (ภาพ+หัวข้อหลัก)</h2>
+        <label>รูปภาพ (URL)</label>
+        <input id="heroImg" placeholder="https://...">
+        <label>หมวด</label>
+        <input id="heroCat" placeholder="ข่าวเกม">
+        <label>หัวข้อ</label>
+        <input id="heroTitle" placeholder="หัวข้อเด่นของวัน">
+        <div class="row" style="margin-top:8px">
+          <button class="btn" id="saveHero">บันทึก Hero</button>
+          <span class="pill" id="heroState">พร้อมแก้ไข</span>
+        </div>
+      </section>
+    </div>
+
+    <!-- Full Article (simple confirm/fetch) -->
+    <section class="card pad" id="fullArticleBox" style="margin-top:16px">
+      <h2>ข่าวเต็ม (ยืนยัน/ดึง)</h2>
+      <div class="table">
+        <div class="row" style="gap:8px;margin:6px 0">
+          <label style="width:110px">Slug</label>
+          <input id="faSlug" placeholder="เช่น genshin-4-0">
+          <button class="btn" id="faFetch">ดึงข่าว</button>
+          <button class="btn secondary" id="faUseHero">เติมจาก Hero</button>
+        </div>
+        <div class="row" style="gap:8px;margin:6px 0"><label style="width:110px">Title</label><input id="faTitle"></div>
+        <div class="row" style="gap:8px;margin:6px 0"><label style="width:110px">Badge</label><input id="faBadge" placeholder="ข่าวเกม"></div>
+        <div class="row" style="gap:8px;margin:6px 0"><label style="width:110px">Date</label><input id="faDate" placeholder="YYYY-MM-DD"></div>
+        <div class="row" style="gap:8px;margin:6px 0"><label style="width:110px">Image URL</label><input id="faImage" placeholder="https://..."></div>
+      </div>
+      <label style="display:block;margin-top:8px">Content (HTML)</label>
+      <textarea id="faContent" style="min-height:260px" placeholder="<p>เนื้อหาข่าว…</p>"></textarea>
+
+      <div class="row" style="gap:8px;margin-top:10px">
+        <button class="btn primary" id="faSave">ยืนยัน/บันทึก ข่าวเต็ม</button>
+        <span class="pill" id="faState">พร้อมแก้ไข</span>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // -------- Auth Guard --------
+    (async function guardAdmin(){
+      try{
+        const me = await fetch('/api/auth/me',{cache:'no-store'}).then(r=>r.ok?r.json():null);
+        if(!me || me.role!=='admin'){ alert('หน้านี้สำหรับผู้ดูแลระบบเท่านั้น'); location.replace('index.html'); return; }
+        document.getElementById('who').textContent = `เข้าสู่ระบบ: ${me.username} (admin)`;
+        document.getElementById('logoutBtn').onclick = async ()=>{ await fetch('/logout',{method:'POST'}); location.href='index.html'; };
+      }catch{ location.replace('index.html'); }
+    })();
+
+    // -------- Helpers --------
+    const $=(s,r=document)=>r.querySelector(s);
+    const heroState=$('#heroState'), tickerState=$('#tickerState');
+    function flash(el, text='บันทึกแล้ว'){ el.textContent=text; setTimeout(()=>el.textContent='พร้อมแก้ไข',1200); }
+
+    async function getCfg(){ return await fetch('/api/config/home',{cache:'no-store'}).then(r=>r.json()); }
+    async function putCfg(obj){ await fetch('/api/config/home',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(obj)}); }
+
+    // -------- Hero/Ticker wiring --------
+    function renderHero(cfg){
+      const h = cfg.hero || {};
+      $('#heroImg').value = h.img || '';
+      $('#heroCat').value = h.cat || 'ข่าวเกม';
+      $('#heroTitle').value = h.title || 'หัวข้อเด่นของวัน';
+    }
+    function renderTicker(cfg){
+      const list = (cfg.ticker && cfg.ticker.length? cfg.ticker:[]).join('\n');
+      $('#tickerInput').value = list || 'ตัวอย่าง:\nPokemon Legends: Z-A ปล่อยตัวอย่างใหม่\nBlue Protocol เปิดเซิร์ฟยุโรปคืนนี้';
+    }
+    document.getElementById('saveHero').onclick = async ()=>{
+      const cfg = await getCfg();
+      cfg.hero = { img:$('#heroImg').value.trim(), cat:$('#heroCat').value.trim(), title:$('#heroTitle').value.trim() };
+      await putCfg(cfg); flash(heroState);
+    };
+    document.getElementById('saveTicker').onclick = async ()=>{
+      const list = $('#tickerInput').value.split('\n').map(s=>s.trim()).filter(Boolean);
+      const cfg = await getCfg(); cfg.ticker = list; await putCfg(cfg); flash(tickerState);
+    };
+
+    // -------- Full Article simple --------
+    async function faGet(slug){
+      try { return await fetch('/api/articles/'+encodeURIComponent(slug), {cache:'no-store'}).then(r=>r.ok?r.json():null); }
+      catch { return null; }
+    }
+    async function faUpsert(payload){
+      const r = await fetch('/api/articles', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+      return r.ok;
+    }
+
+    document.getElementById('faFetch').onclick = async ()=>{
+      const slug = $('#faSlug').value.trim();
+      if(!slug){ alert('กรุณาใส่ slug'); return; }
+      const a = await faGet(slug);
+      if(!a){ alert('ยังไม่พบบทความนี้ในฐานข้อมูล'); return; }
+      $('#faTitle').value   = a.title || '';
+      $('#faBadge').value   = a.badge || 'ข่าวเกม';
+      $('#faDate').value    = (a.published_at||'').slice(0,10);
+      $('#faImage').value   = a.image_url || '';
+      $('#faContent').value = a.content || '';
+      flash(document.getElementById('faState'),'ดึงสำเร็จ');
+    };
+
+    document.getElementById('faUseHero').onclick = ()=>{
+      const img   = $('#heroImg')?.value.trim() || '';
+      const cat   = $('#heroCat')?.value.trim() || 'ข่าวเกม';
+      const title = $('#heroTitle')?.value.trim() || '';
+      if(title && !$('#faTitle').value) $('#faTitle').value = title;
+      if(cat) $('#faBadge').value = cat;
+      if(img) $('#faImage').value = img;
+    };
+
+    document.getElementById('faSave').onclick = async ()=>{
+      const slug = $('#faSlug').value.trim();
+      if(!slug){ alert('กรุณาใส่ slug'); return; }
+      const payload = {
+        slug,
+        title: $('#faTitle').value.trim(),
+        badge: $('#faBadge').value.trim() || 'ข่าวเกม',
+        image_url: $('#faImage').value.trim(),
+        content: $('#faContent').value,
+        published_at: ($('#faDate').value.trim() ? ($('#faDate').value.trim() + ' 09:00:00+07') : undefined)
+      };
+      Object.keys(payload).forEach(k=>payload[k]===undefined && delete payload[k]);
+      const ok = await faUpsert(payload);
+      const st = document.getElementById('faState');
+      st.textContent = ok ? 'บันทึกแล้ว' : 'บันทึกล้มเหลว';
+      if(ok) setTimeout(()=>st.textContent='พร้อมแก้ไข',1200);
+      if(ok) alert('ยืนยัน/บันทึกข่าวเต็มสำเร็จ');
+    };
+
+    // init
+    (async function init(){
+      const cfg = await getCfg();
+      renderHero(cfg); renderTicker(cfg);
+    })();
+  </script>
+</body>
+</html>

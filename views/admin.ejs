@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Panel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:1000}
+    .modal{width:min(1024px,96vw);max-height:86vh;overflow:auto;border-radius:16px;background:var(--card-bg, rgba(255,255,255,.04));box-shadow:0 8px 30px rgba(0,0,0,.4)}
+    .modal .pad{padding:16px}
+    .table-compact .row{display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+    .muted2{opacity:.75;font-size:.9em}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .preview{border-radius:12px;border:1px solid rgba(154,164,178,.25);padding:12px;background:rgba(255,255,255,.02);overflow:auto;max-height:60vh}
+    .pill.warn{background:#a87900;color:#fff}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="nav">
+      <div class="brand"><span class="logo">⚙️</span> <span>Admin Panel</span></div>
+      <div class="right">
+        <span class="muted" id="who"></span>
+        <a class="btn" href="index.html">กลับหน้าแรก</a>
+        <button class="btn danger" id="logoutBtn">ออกจากระบบ</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="card pad" style="margin-bottom:16px">
+      <h2>Dashboard</h2>
+      <div class="row" style="gap:6px;flex-wrap:wrap">
+        <span class="pill">Access: admin only</span>
+        <span class="pill" id="saveState">พร้อมแก้ไข</span>
+      </div>
+    </div>
+    <div class="grid">
+      <!-- Ticker -->
+      <section class="card">
+        <div class="pad">
+          <h2>แถบ “กำลังฮิต” (Ticker)</h2>
+          <p class="help">ใส่ 1 บรรทัดต่อ 1 หัวข้อ</p>
+          <textarea id="tickerInput" placeholder="ตัวอย่าง:&#10;Pokemon Legends: Z-A ปล่อยตัวอย่างใหม่&#10;Blue Protocol เปิดเซิร์ฟยุโรปคืนนี้"></textarea>
+          <div class="row" style="margin-top:8px">
+            <button class="btn primary" id="saveTicker">บันทึก Ticker</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Hero -->
+      <section class="card">
+        <div class="pad">
+          <h2>Hero Slide (ภาพ+หัวข้อหลัก)</h2>
+          <label>รูปภาพ (URL)</label>
+          <input id="heroImg" placeholder="https://...">
+          <label>หมวด</label>
+          <input id="heroCat" placeholder="ข่าวเกม">
+          <label>หัวข้อ</label>
+          <input id="heroTitle" placeholder="หัวข้อเด่นของวัน">
+          <div class="row" style="margin-top:8px">
+            <button class="btn primary" id="saveHero">บันทึก Hero</button>
+          </div>
+        </div>
+      </section>
+    </div>
+    <p></p>
+    <!-- Grid Manager -->
+    <section class="card pad" id="gridManager">
+      <h2>จัดการการ์ดหน้าแรก</h2>
+      <p class="help">เพิ่ม/แก้ไข/ลบการ์ดได้ไม่จำกัด (บันทึกลงฐานข้อมูล)</p>
+
+      <div class="row" style="gap:8px; margin-bottom:8px; flex-wrap:wrap">
+        <button class="btn" id="btnAdd">+ เพิ่มการ์ด</button>
+        <button class="btn" id="btnFromArticles">⬇️ นำเข้าจากบทความ…</button>
+        <button class="btn" id="btnAutoFromLatest">↻ เติมอัตโนมัติจากบทความล่าสุด</button>
+        <button class="btn primary" id="btnSave">บันทึกทั้งหมด</button>
+        <span class="pill" id="gridState">พร้อมแก้ไข</span>
+      </div>
+
+      <div id="gridList"></div>
+
+      <div id="editorWrap" class="grid" style="grid-template-columns:1fr 1fr; gap:12px; margin-top:12px; display:none">
+        <!-- Editor -->
+        <section class="card">
+          <div class="pad">
+            <h3>แก้ไขการ์ด</h3>
+            <div class="table">
+              <div class="row" style="gap:8px; margin:6px 0"><label style="width:90px">Slug</label><input id="fSlug" placeholder="slug-ของข่าว"></div>
+              <div class="row" style="gap:8px; margin:6px 0"><label style="width:90px">Title</label><input id="fTitle" placeholder="หัวข้อ"></div>
+              <div class="row" style="gap:8px; margin:6px 0"><label style="width:90px">Badge</label><input id="fBadge" placeholder="เช่น เกม / เกมมือถือ / อนิเมะ"></div>
+              <div class="row" style="gap:8px; margin:6px 0"><label style="width:90px">Date</label><input id="fDate" placeholder="YYYY-MM-DD"></div>
+              <div class="row" style="gap:8px; margin:6px 0"><label style="width:90px">Image</label><input id="fImage" placeholder="https://..."></div>
+            </div>
+            <div class="row" style="gap:8px; margin-top:8px">
+              <span class="pill warn" id="dupWarn" style="display:none">⚠️ พบ slug ซ้ำ</span>
+              <button class="btn primary" id="btnApply">อัปเดตการ์ดนี้</button>
+              <button class="btn" id="btnEditArticle">✏️ แก้ไขข่าวเต็ม</button>
+              <button class="btn danger"  id="btnRemove">ลบการ์ดนี้</button>
+              <button class="btn"         id="btnClose">ปิด</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Preview -->
+        <section class="card">
+          <div class="pad">
+            <h3>ตัวอย่างแบบเรียลไทม์</h3>
+            <article class="card" id="pvCard">
+              <img id="pvImg" src="" alt="preview" style="width:100%; max-height:260px; object-fit:cover">
+              <div class="pad">
+                <div class="meta"><span class="badge" id="pvBadge"></span><span id="pvDate"></span></div>
+                <h3 id="pvTitle"></h3>
+              </div>
+            </article>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal: Import from Articles -->
+  <div class="overlay" id="impOverlay">
+    <div class="modal">
+      <div class="pad">
+        <div class="row" style="justify-content:space-between; align-items:center">
+          <h3>นำเข้าการ์ดจากบทความ</h3>
+          <button class="btn" id="impClose">ปิด</button>
+        </div>
+        <p class="muted2">เลือกบทความที่จะเพิ่มเป็นการ์ด (ข้าม slug ที่มีอยู่แล้วให้เอง)</p>
+        <div class="table-compact" id="impList"></div>
+        <div class="row" style="gap:8px; margin-top:10px">
+          <button class="btn primary" id="impAddSel">เพิ่มที่เลือก</button>
+          <span class="pill" id="impHint">0 รายการที่เลือก</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Full Article Editor -->
+  <div class="overlay" id="artOverlay">
+    <div class="modal">
+      <div class="pad">
+        <div class="row" style="justify-content:space-between; align-items:center">
+          <h3 id="artTitle">แก้ไขข่าวเต็ม</h3>
+          <button class="btn" id="artClose">ปิด</button>
+        </div>
+        <div class="split">
+          <section class="card">
+            <div class="pad">
+              <div class="table">
+                <div class="row" style="gap:8px; margin:6px 0"><label style="width:110px">Slug</label><input id="aSlug" disabled></div>
+                <div class="row" style="gap:8px; margin:6px 0"><label style="width:110px">Title</label><input id="aTitle"></div>
+                <div class="row" style="gap:8px; margin:6px 0"><label style="width:110px">Badge</label><input id="aBadge" placeholder="ข่าวเกม"></div>
+                <div class="row" style="gap:8px; margin:6px 0"><label style="width:110px">Date</label><input id="aDate" placeholder="YYYY-MM-DD"></div>
+                <div class="row" style="gap:8px; margin:6px 0"><label style="width:110px">Image URL</label><input id="aImage" placeholder="https://..."></div>
+              </div>
+              <label style="display:block; margin-top:8px">Content (HTML)</label>
+              <textarea id="aContent" style="min-height:260px" placeholder="<p>เนื้อหาข่าว…</p>"></textarea>
+              <div class="row" style="gap:8px; margin-top:8px">
+                <button class="btn primary" id="artSave">บันทึกข่าวเต็ม</button>
+                <span class="pill" id="artState">พร้อมแก้ไข</span>
+              </div>
+            </div>
+          </section>
+          <section class="card">
+            <div class="pad">
+              <h3>พรีวิว</h3>
+              <div class="preview" id="aPreview"></div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ---------- Auth guard ----------
+    (async function guardAdmin(){
+      try{
+        const me = await fetch('/api/auth/me',{cache:'no-store'}).then(r=>r.ok?r.json():null);
+        if(!me || me.role!=='admin'){ alert('หน้านี้สำหรับผู้ดูแลระบบเท่านั้น'); location.replace('index.html'); return; }
+        document.getElementById('who').textContent = `กำลังใช้งานในชื่อ: ${me.username} (role: ${me.role})`;
+        document.getElementById('logoutBtn').onclick = async ()=>{ await fetch('/logout',{method:'POST'}); location.href='index.html'; };
+      }catch(e){
+        alert('ไม่สามารถตรวจสอบสิทธิ์ได้'); location.replace('index.html');
+      }
+    })();
+
+    // ---------- Helpers ----------
+    const $  = (s,r=document)=>r.querySelector(s);
+    const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
+    const gridState = $('#gridState'); const saveState = $('#saveState');
+    function gDirty(){ gridState.textContent='มีการแก้ไข'; }
+    function gSaved(){ gridState.textContent='บันทึกแล้ว'; setTimeout(()=>gridState.textContent='พร้อมแก้ไข',1200); }
+    function markSaved(){ saveState.textContent='บันทึกแล้ว'; setTimeout(()=>saveState.textContent='พร้อมแก้ไข',1200); }
+
+    async function getCfg(){ return await fetch('/api/config/home',{cache:'no-store'}).then(r=>r.json()); }
+    async function putCfg(obj){
+      await fetch('/api/config/home',{ method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(obj) });
+      markSaved(); gSaved();
+    }
+    async function getArticles(limit=100, offset=0){
+      try{ return await fetch(`/api/articles?limit=${limit}&offset=${offset}`, {cache:'no-store'}).then(r=>r.json()); }
+      catch(e){ return []; }
+    }
+    async function getArticle(slug){
+      try{ return await fetch(`/api/articles/${encodeURIComponent(slug)}`, {cache:'no-store'}).then(r=>r.ok?r.json():null); }
+      catch(e){ return null; }
+    }
+    async function putArticle(slug, payload){
+  const body = { slug, ...payload };
+  const r = await fetch('/api/articles', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include', // ให้แน่ใจว่าพก session ไปด้วย
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) {
+    let detail = '';
+    try { const j = await r.json(); detail = j?.error || ''; } catch {}
+    throw new Error(detail || ('HTTP '+r.status));
+  }
+  return r.json().catch(()=>({ ok:true }));
+}
+
+
+    // ---------- Grid state ----------
+    const listEl = $('#gridList');
+    const editor = $('#editorWrap');
+    const dupWarn = $('#dupWarn');
+    let GRID = []; let idx = -1;
+
+    function slugExists(slug, ignore=-1){
+      if(!slug) return false;
+      const s = String(slug).trim().toLowerCase();
+      return GRID.some((it,i)=>i!==ignore && String(it.slug||'').toLowerCase()===s);
+    }
+    function isValidDate(s){ return /^\d{4}-\d{2}-\d{2}$/.test(s); }
+
+    function renderList(){
+      listEl.innerHTML = GRID.map((it,i)=>`
+        <div class="row" style="justify-content:space-between; border-bottom:1px solid rgba(255,255,255,.08); padding:6px 0">
+          <div>
+            <b>${it.title||'(ไม่มีหัวข้อ)'}</b>
+            <div class="muted">${it.slug||''} • ${it.badge||'ข่าวเกม'} • ${it.date||''}</div>
+          </div>
+          <div class="row" style="gap:6px; flex-wrap:wrap">
+            <button class="btn" onclick="editCard(${i})">แก้ไขการ์ด</button>
+            <button class="btn" onclick="openArticleEditor('${(it.slug||'').replace(/'/g,'\'')}')">✏️ แก้ไขข่าวเต็ม</button>
+            <button class="btn danger" onclick="removeCard(${i})">ลบ</button>
+            <button class="btn" onclick="moveCard(${i},-1)">↑</button>
+            <button class="btn" onclick="moveCard(${i},1)">↓</button>
+          </div>
+        </div>
+      `).join('');
+    }
+    // สร้าง slug จาก Title อัตโนมัติ และเติม -2, -3 ถ้าซ้ำ
+let slugDirty = false; // ถ้าผู้ใช้พิมพ์ slug เองจะไม่ทับ
+function autoSlugFromTitle(title){
+  const hasWord = /[\wก-๛]/u.test(title||'');
+  let base = (title||'').toLowerCase().trim()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9ก-๛]+/giu,'-')
+    .replace(/-+/g,'-').replace(/^-+|-+$/g,'');
+  if(!hasWord || !base) base = 'post';
+  let slug = base, n=2;
+  while(slugExists(slug)) slug = `${base}-${n++}`;
+  return slug;
+}
+
+    window.editCard = function(i){
+      idx=i; const it=GRID[i]||{};
+      $('#fSlug').value  = it.slug  || '';
+      $('#fTitle').value = it.title || '';
+      $('#fBadge').value = it.badge || 'ข่าวเกม';
+      $('#fDate').value  = it.date  || new Date().toISOString().slice(0,10);
+      $('#fImage').value = it.image || it.img || '';
+      dupWarn.style.display='none'; updatePreview(); editor.style.display='';
+    }
+    window.removeCard = function(i){
+      if(!confirm('ยืนยันลบการ์ดนี้?')) return;
+      GRID.splice(i,1); editor.style.display='none'; renderList(); gDirty();
+    }
+    window.moveCard = function(i,dir){
+      const j=i+dir; if(j<0||j>=GRID.length) return;
+      [GRID[i],GRID[j]]=[GRID[j],GRID[i]]; renderList(); gDirty();
+    }
+    // Title เปลี่ยน -> สร้าง slug ให้อัตโนมัติ (ถ้ายังไม่เคยพิมพ์ slug เอง)
+document.getElementById('fTitle').addEventListener('input', ()=>{
+  if(!slugDirty){
+    document.getElementById('fSlug').value = autoSlugFromTitle(document.getElementById('fTitle').value);
+  }
+});
+document.getElementById('fSlug').addEventListener('input', ()=>{
+  slugDirty = true; // ผู้ใช้พิมพ์เองแล้ว ไม่ทับอัตโนมัติ
+});
+
+    $('#btnAdd').onclick = ()=>{ GRID.push({ slug:'', title:'หัวข้อใหม่', badge:'ข่าวเกม', date:new Date().toISOString().slice(0,10), image:'' }); renderList(); gDirty(); };
+// เดิม: GRID.push({ slug:'', title:'หัวข้อใหม่', ... });
+document.getElementById('btnAdd').onclick = ()=>{
+  const title = 'หัวข้อใหม่';
+  const slug  = autoSlugFromTitle(title + '-' + Date.now()); // กันซ้ำชัวร์
+  GRID.push({ slug, title, badge:'ข่าวเกม', date:new Date().toISOString().slice(0,10), image:'' });
+  renderList(); gDirty();
+};
+    $('#btnApply').onclick = async ()=>{
+      if(idx<0) return;
+      const newSlug=$('#fSlug').value.trim();
+      const newDate=$('#fDate').value.trim();
+      if(!newSlug){ alert('กรุณาใส่ Slug ของบทความ'); return; }
+      if(slugExists(newSlug, idx)){ dupWarn.style.display='inline-block'; return; }
+      if(newDate && !isValidDate(newDate)){ alert('รูปแบบวันที่ควรเป็น YYYY-MM-DD'); return; }
+
+      GRID[idx]={ slug:newSlug, title:$('#fTitle').value.trim(), badge:$('#fBadge').value.trim()||'ข่าวเกม', date:newDate, image:$('#fImage').value.trim() };
+      dupWarn.style.display='none'; renderList(); updatePreview(); gDirty();
+    }
+    document.getElementById('btnApply').onclick = async ()=>{
+  if(idx<0) return;
+  const wantSlug = document.getElementById('fSlug').value.trim();
+  const title    = document.getElementById('fTitle').value.trim();
+  const finalSlug = wantSlug || autoSlugFromTitle(title || 'post'); // <-- เติมบรรทัดนี้
+
+  const newDate  = document.getElementById('fDate').value.trim();
+  if(slugExists(finalSlug, idx)){ dupWarn.style.display='inline-block'; return; }
+  if(newDate && !/^\d{4}-\d{2}-\d{2}$/.test(newDate)){ alert('รูปแบบวันที่ควรเป็น YYYY-MM-DD'); return; }
+
+  GRID[idx] = {
+    slug:  finalSlug,
+    title: title,
+    badge: document.getElementById('fBadge').value.trim() || 'ข่าวเกม',
+    date:  newDate,
+    image: document.getElementById('fImage').value.trim()
+  };
+  document.getElementById('fSlug').value = finalSlug; // sync กลับช่อง
+  dupWarn.style.display='none'; renderList(); updatePreview(); gDirty();
+};
+    $('#btnRemove').onclick=()=>{ if(idx<0) return; removeCard(idx); };
+    $('#btnClose').onclick =()=>{ editor.style.display='none'; };
+
+    $('#btnSave').onclick = async ()=>{ const cfg = await getCfg(); cfg.grid = GRID; await putCfg(cfg); };
+
+    function updatePreview(){
+      $('#pvTitle').textContent = $('#fTitle').value || '(ไม่มีหัวข้อ)';
+      $('#pvBadge').textContent = $('#fBadge').value || 'ข่าวเกม';
+      $('#pvDate').textContent  = $('#fDate').value  || '';
+      $('#pvImg').src = $('#fImage').value.trim() || 'https://picsum.photos/800/450?random=999';
+    }
+    ['#fTitle','#fBadge','#fDate','#fImage'].forEach(sel=>$(sel).addEventListener('input', ()=>{ updatePreview(); gDirty(); }));
+
+    // ----- Import from Articles (quick modal) -----
+    const overlay = $('#impOverlay'); const impList = $('#impList'); const impHint = $('#impHint');
+    function openImp(){ overlay.style.display='flex'; }
+    function closeImp(){ overlay.style.display='none'; impList.innerHTML=''; impHint.textContent='0 รายการที่เลือก'; }
+    $('#impClose').onclick = closeImp;
+    $('#btnFromArticles').onclick = async ()=>{
+      openImp();
+      const arts = await getArticles(200,0);
+      impList.innerHTML = arts.map(a=>`
+        <div class="row">
+          <input type="checkbox" class="impChk" data-slug="${a.slug}" data-title="${(a.title||'').replace(/"/g,'&quot;')}" data-img="${(a.image_url||'').replace(/"/g,'&quot;')}" data-badge="${(a.badge||'ข่าวเกม').replace(/"/g,'&quot;')}" data-date="${(a.published_at||'').slice(0,10)}">
+          <div style="flex:1"><div><b>${a.title}</b> <span class="badge">${a.badge||'ข่าวเกม'}</span></div><div class="muted2">${a.slug} • ${(a.published_at||'').slice(0,10)}</div></div>
+          <img src="${a.image_url||'https://picsum.photos/seed/noimg/120/68'}" alt="thumb" style="width:120px;height:68px;object-fit:cover;border-radius:10px">
+        </div>
+      `).join('');
+      impList.addEventListener('change', ()=>{ impHint.textContent = $$('.impChk:checked', impList).length + ' รายการที่เลือก'; }, { once:true });
+    };
+    $('#impAddSel').onclick = ()=>{
+      const chks = $$('.impChk:checked', impList);
+      let added=0, skipped=0;
+      chks.forEach(c=>{
+        const obj = { slug:c.dataset.slug, title:c.dataset.title, image:c.dataset.img, badge:c.dataset.badge||'ข่าวเกม', date:c.dataset.date||new Date().toISOString().slice(0,10) };
+        if(slugExists(obj.slug)){ skipped++; return; } GRID.push(obj); added++;
+      });
+      if(added){ renderList(); gDirty(); } alert('เพิ่มแล้ว: '+added+' รายการ'+(skipped?(' — ข้ามซ้ำ: '+skipped):'')); closeImp();
+    };
+
+    // ----- Auto from latest -----
+    $('#btnAutoFromLatest').onclick = async ()=>{
+      const arts = await getArticles(50,0);
+      let added=0; arts.forEach(a=>{
+        const obj = { slug:a.slug, title:a.title, image:a.image_url||'', badge:a.badge||'ข่าวเกม', date:(a.published_at||'').slice(0,10) };
+        if(!slugExists(obj.slug)){ GRID.push(obj); added++; }
+      });
+      renderList(); gDirty(); alert('เพิ่มจากบทความล่าสุด: '+added+' รายการ (ข้าม slug ที่ซ้ำแล้ว)');
+    };
+
+    // ===== Full Article Editor =====
+    const artOverlay = $('#artOverlay');
+    const artState   = $('#artState');
+async function openArticleEditor(slug){
+  try{
+    if(!slug){
+      const auto = autoSlugFromTitle($('#fTitle').value || 'post');
+      $('#fSlug').value = auto;
+      if(idx>=0){ GRID[idx].slug = auto; renderList(); gDirty(); }
+      slug = auto;
+    }
+
+    let data = await getArticle(slug);
+    if(!data){
+      await putArticle(slug, {
+        title: $('#fTitle').value.trim() || 'ไม่มีหัวข้อ',
+        badge: $('#fBadge').value.trim() || 'ข่าวเกม',
+        image_url: $('#fImage').value.trim() || '',
+        content: '<p>เพิ่มเนื้อหาบทความที่นี่…</p>',
+        published_at: ($('#fDate').value.trim() ? ($('#fDate').value.trim() + ' 09:00:00+07') : undefined)
+      });
+      data = await getArticle(slug);
+    }
+
+    if(!data) data = {slug, title:'', badge:'ข่าวเกม', image_url:'', content:'', published_at:new Date().toISOString()};
+
+    $('#artTitle').textContent = 'แก้ไขข่าวเต็ม: ' + slug;
+    $('#aSlug').value   = data.slug || slug;
+    $('#aTitle').value  = data.title || '';
+    $('#aBadge').value  = data.badge || 'ข่าวเกม';
+    $('#aDate').value   = (data.published_at||'').slice(0,10);
+    $('#aImage').value  = data.image_url || '';
+    $('#aContent').value= data.content || '';
+    $('#aPreview').innerHTML = data.content || '<p class="muted2">ยังไม่มีเนื้อหา</p>';
+    $('#artOverlay').style.display='flex';
+  }catch(err){
+    alert('ไม่สามารถเปิดข่าวเต็มได้: ' + err.message);
+    console.error(err);
+  }
+}
+
+    $('#artClose').onclick = ()=>{ artOverlay.style.display='none'; };
+    $('#aContent').addEventListener('input', ()=>{ $('#aPreview').innerHTML = $('#aContent').value; artState.textContent='มีการแก้ไข'; });
+    ;['#aTitle','#aBadge','#aDate','#aImage'].forEach(sel=>$(sel).addEventListener('input', ()=>{ artState.textContent='มีการแก้ไข'; }));
+
+    $('#artSave').onclick = async ()=>{
+      const slug = $('#aSlug').value.trim();
+      const payload = {
+        title: $('#aTitle').value.trim(),
+        badge: $('#aBadge').value.trim() || 'ข่าวเกม',
+        image_url: $('#aImage').value.trim(),
+        content: $('#aContent').value,
+        published_at: ($('#aDate').value.trim() ? ($('#aDate').value.trim() + ' 09:00:00+07') : undefined)
+      };
+      // clean undefined
+      Object.keys(payload).forEach(k=>payload[k]===undefined && delete payload[k]);
+      const ok = await putArticle(slug, payload);
+      if(ok){ artState.textContent='บันทึกแล้ว'; setTimeout(()=>artState.textContent='พร้อมแก้ไข',1200); alert('บันทึกข่าวเต็มเรียบร้อย'); }
+      else  { alert('บันทึกไม่สำเร็จ ตรวจสอบสิทธิ์หรือข้อมูลที่ส่ง'); }
+    };
+
+    // ----- init -----
+    (async function init(){
+      const cfg = await getCfg();
+      GRID = Array.isArray(cfg.grid) ? cfg.grid.slice() : [];
+      renderList();
+    })();
+    // -------- Hero/Ticker wiring --------
+    function renderHero(cfg){
+      const h = cfg.hero || {};
+      $('#heroImg').value = h.img || '';
+      $('#heroCat').value = h.cat || 'ข่าวเกม';
+      $('#heroTitle').value = h.title || 'หัวข้อเด่นของวัน';
+    }
+    function renderTicker(cfg){
+      const list = (cfg.ticker && cfg.ticker.length? cfg.ticker:[]).join('\n');
+      $('#tickerInput').value = list || 'ตัวอย่าง:\nPokemon Legends: Z-A ปล่อยตัวอย่างใหม่\nBlue Protocol เปิดเซิร์ฟยุโรปคืนนี้';
+    }
+    document.getElementById('saveHero').onclick = async ()=>{
+      const cfg = await getCfg();
+      cfg.hero = { img:$('#heroImg').value.trim(), cat:$('#heroCat').value.trim(), title:$('#heroTitle').value.trim() };
+      await putCfg(cfg); flash(heroState);
+    };
+    document.getElementById('saveTicker').onclick = async ()=>{
+      const list = $('#tickerInput').value.split('\n').map(s=>s.trim()).filter(Boolean);
+      const cfg = await getCfg(); cfg.ticker = list; await putCfg(cfg); flash(tickerState);
+    };
+  </script>
+</body>
+</html>

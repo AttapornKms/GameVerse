@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>สมัครสมาชิก – GameMag</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0a0f1a;
+        --surface: #0f1524;
+        --card: #121a2b;
+        --muted: #9aa4b2;
+        --text: #e9eef5;
+        --primary: #6d28d9;
+        --accent: #22d3ee;
+        --ring: rgba(139, 92, 246, 0.35);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Prompt", system-ui, -apple-system, "Segoe UI", Roboto,
+          Arial, sans-serif;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        color: var(--text);
+
+        /* พื้นหลังน้ำเงิน–ชมพูนุ่ม ๆ แบบ galaxy */
+        background: radial-gradient(
+            circle at 25% 25%,
+            rgba(59, 130, 246, 0.35),
+            transparent 60%
+          ),
+          radial-gradient(
+            circle at 75% 75%,
+            rgba(236, 72, 153, 0.35),
+            transparent 60%
+          ),
+          radial-gradient(
+            circle at 50% 50%,
+            rgba(139, 92, 246, 0.25),
+            transparent 70%
+          ),
+          linear-gradient(180deg, #0a0f1a 0%, #05070d 100%);
+        background-size: cover;
+        overflow: hidden;
+        position: relative;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      header {
+        position: sticky;
+        top: 0;
+        backdrop-filter: saturate(180%) blur(10px);
+        background: rgba(10, 15, 26, 0.6);
+        border-bottom: 1px solid rgba(154, 164, 178, 0.15);
+      }
+
+      .nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 0;
+        width: min(92%, 1200px);
+        margin: auto;
+      }
+
+      .brand {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        font-weight: 700;
+      }
+
+      .logo {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--primary), #22c55e);
+        display: grid;
+        place-items: center;
+      }
+
+      .back-home {
+        color: var(--muted);
+        border: 1px solid rgba(154, 164, 178, 0.35);
+        padding: 8px 12px;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+      }
+
+      .back-home:hover {
+        color: var(--text);
+        border-color: var(--primary);
+      }
+
+      /* การ์ด */
+      .card {
+        width: min(520px, 96%);
+        background: rgba(18, 26, 43, 0.9); /* เพิ่มความทึบขึ้นจากเดิม */
+        border: 1px solid rgba(154, 164, 178, 0.25);
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5); /* เงาลึกขึ้น */
+        padding: 24px;
+        backdrop-filter: blur(16px); /* ทำให้พื้นหลังรอบกล่องเบลอชัดขึ้น */
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+
+      .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6); /* เงาใหญ่ขึ้นเวลา hover */
+      }
+
+      h1 {
+        margin: 0 0 10px;
+      }
+
+      .subtitle {
+        color: var(--muted);
+        margin: 0 0 16px;
+        font-size: 14px;
+      }
+
+      /* Label + Input */
+      label {
+        display: block;
+        margin: 10px 0 6px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      input {
+        width: 100%;
+        padding: 12px 14px;
+        border-radius: 12px;
+        border: 1px solid rgba(154, 164, 178, 0.35);
+        background: rgba(255, 255, 255, 0.02);
+        color: var(--text);
+        outline: none;
+        transition: border 0.2s, box-shadow 0.2s;
+      }
+
+      input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px var(--ring);
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      /* ปุ่ม */
+      .btn {
+        margin-top: 16px;
+        width: 100%;
+        padding: 12px 16px;
+        border-radius: 12px;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        background: linear-gradient(135deg, var(--primary), var(--accent));
+        color: #fff;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+      }
+
+      /* ข้อความ muted, error, success */
+      .muted {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .error,
+      .success {
+        display: none;
+        margin-bottom: 10px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        font-size: 14px;
+      }
+
+      .error {
+        background: rgba(239, 68, 68, 0.12);
+        color: #fecaca;
+        border: 1px solid rgba(239, 68, 68, 0.35);
+      }
+
+      .success {
+        background: rgba(34, 197, 94, 0.12);
+        color: #bbf7d0;
+        border: 1px solid rgba(34, 197, 94, 0.35);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="card">
+        <h1>สมัครสมาชิก</h1>
+        <p class="subtitle">
+          สร้างบัญชีใหม่สำหรับล็อกอินด้วย <strong>ชื่อผู้ใช้ + รหัสผ่าน</strong>
+        </p>
+
+        <form id="registerForm" novalidate>
+          <div class="error" id="errorBox"></div>
+          <div class="success" id="successBox"></div>
+
+          <label for="displayName">ชื่อที่แสดง</label>
+          <input
+            type="text"
+            id="displayName"
+            placeholder="เช่น GamerBoy"
+            required
+          />
+
+          <label for="username">ชื่อผู้ใช้ (สำหรับล็อกอิน)</label>
+          <input
+            type="text"
+            id="username"
+            placeholder="a-z, 0-9, _ (3–16 ตัว)"
+            required
+            pattern="^[a-zA-Z0-9_]{3,16}$"
+            autocomplete="username"
+          />
+
+          <label for="email">อีเมล (ตัวเลือก)</label>
+          <input
+            type="email"
+            id="email"
+            placeholder="you@example.com"
+            autocomplete="email"
+          />
+
+          <label for="password">รหัสผ่าน</label>
+          <input
+            type="password"
+            id="password"
+            placeholder="อย่างน้อย 6 ตัว"
+            minlength="6"
+            required
+            autocomplete="new-password"
+          />
+
+          <label for="confirm">ยืนยันรหัสผ่าน</label>
+          <input
+            type="password"
+            id="confirm"
+            placeholder="พิมพ์ซ้ำรหัสผ่าน"
+            required
+          />
+
+          <button class="btn" type="submit" id="submitBtn">สมัครสมาชิก</button>
+        </form>
+
+        <p class="muted" style="margin-top: 10px">
+          มีบัญชีอยู่แล้ว? <a href="login.html">เข้าสู่ระบบ</a>
+        </p>
+      </section>
+    </main>
+
+    <script>
+      const form = document.getElementById("registerForm");
+      const errorBox = document.getElementById("errorBox");
+      const successBox = document.getElementById("successBox");
+      const btn = document.getElementById("submitBtn");
+      function showError(t) {
+        errorBox.textContent = t;
+        errorBox.style.display = "block";
+        successBox.style.display = "none";
+      }
+      function showSuccess(t) {
+        successBox.textContent = t;
+        successBox.style.display = "block";
+        errorBox.style.display = "none";
+      }
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const displayName = form.displayName.value.trim();
+        const username = form.username.value.trim();
+        const password = form.password.value;
+        const confirm = form.confirm.value;
+        if (!displayName || !username || !password)
+          return showError("กรอกข้อมูลให้ครบ");
+        if (password.length < 6) return showError("รหัสผ่านต้อง ≥ 6 ตัว");
+        if (password !== confirm) return showError("รหัสผ่านไม่ตรงกัน");
+
+        btn.disabled = true;
+        btn.textContent = "กำลังสมัคร...";
+        const res = await fetch("/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ displayName, username, password }),
+        });
+        btn.disabled = false;
+        btn.textContent = "สมัครสมาชิก";
+        if (!res.ok) {
+          return showError(
+            res.status === 409 ? "ชื่อผู้ใช้ถูกใช้แล้ว" : "สมัครไม่สำเร็จ"
+          );
+        }
+        showSuccess("สมัครสำเร็จ! กำลังไปหน้าเข้าสู่ระบบ...");
+        setTimeout(() => (location.href = "/login"), 800);
+      });
+    </script>
+  </body>
+</html>

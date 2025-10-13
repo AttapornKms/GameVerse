@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Panel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header>
+    <div class="nav">
+      <div class="brand"><span class="logo">⚙️</span> <span>Admin Panel</span></div>
+      <div class="right">
+        <span class="muted" id="who"></span>
+        <a class="btn" href="index.html">กลับหน้าแรก</a>
+        <button class="btn danger" id="logoutBtn">ออกจากระบบ</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="card pad" style="margin-bottom:16px">
+      <h2>Dashboard</h2>
+      <p class="muted">แก้ไขคอนเทนต์บนหน้าแรก (Hero / Ticker / Grid) — ข้อมูลถูกเก็บที่ <code>home_config</code> (JSONB) ในฐานข้อมูล</p>
+      <div class="row">
+        <span class="pill">Access: admin only</span>
+        <span class="pill" id="saveState">พร้อมแก้ไข</span>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- Ticker -->
+      <section class="card">
+        <div class="pad">
+          <h2>แถบ “กำลังฮิต” (Ticker)</h2>
+          <p class="help">ใส่ 1 บรรทัดต่อ 1 หัวข้อ</p>
+          <textarea id="tickerInput" placeholder="ตัวอย่าง:&#10;Pokemon Legends: Z-A ปล่อยตัวอย่างใหม่&#10;Blue Protocol เปิดเซิร์ฟยุโรปคืนนี้"></textarea>
+          <div class="row" style="margin-top:8px">
+            <button class="btn primary" id="saveTicker">บันทึก Ticker</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Hero -->
+      <section class="card">
+        <div class="pad">
+          <h2>Hero Slide (ภาพ+หัวข้อหลัก)</h2>
+          <label>รูปภาพ (URL)</label>
+          <input id="heroImg" placeholder="https://...">
+          <label>หมวด</label>
+          <input id="heroCat" placeholder="ข่าวเกม">
+          <label>หัวข้อ</label>
+          <input id="heroTitle" placeholder="หัวข้อเด่นของวัน">
+          <div class="row" style="margin-top:8px">
+            <button class="btn primary" id="saveHero">บันทึก Hero</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Grid Manager -->
+    <section class="card pad" id="gridManager" style="margin-top:16px">
+      <h2>จัดการการ์ดหน้าแรก</h2>
+      <p class="help">เพิ่ม/แก้ไข/ลบการ์ดได้ไม่จำกัด (บันทึกลงฐานข้อมูล)</p>
+
+      <div class="row" style="gap:8px; margin-bottom:8px">
+        <button class="btn" id="btnAdd">+ เพิ่มการ์ด</button>
+        <button class="btn primary" id="btnSave">บันทึกทั้งหมด</button>
+        <span class="pill" id="gridState">พร้อมแก้ไข</span>
+      </div>
+
+      <div id="gridList"></div>
+
+      <div id="editorWrap" class="grid" style="grid-template-columns:1fr 1fr; gap:12px; margin-top:12px; display:none">
+        <!-- Editor -->
+        <section class="card">
+          <div class="pad">
+            <h3>แก้ไขการ์ด</h3>
+            <div class="table">
+              <div class="row" style="gap:8px; margin:6px 0"><label style="width:90px">Slug</label><input id="fSlug" placeholder="slug-ของข่าว"></div>
+              <div class="row" style="gap:8px; margin:6px 0"><label style="width:90px">Title</label><input id="fTitle" placeholder="หัวข้อ"></div>
+              <div class="row" style="gap:8px; margin:6px 0"><label style="width:90px">Badge</label><input id="fBadge" placeholder="เช่น เกม / เกมมือถือ / อนิเมะ"></div>
+              <div class="row" style="gap:8px; margin:6px 0"><label style="width:90px">Date</label><input id="fDate" placeholder="YYYY-MM-DD"></div>
+              <div class="row" style="gap:8px; margin:6px 0"><label style="width:90px">Image</label><input id="fImage" placeholder="https://..."></div>
+            </div>
+            <div class="row" style="gap:8px; margin-top:8px">
+              <button class="btn primary" id="btnApply">อัปเดตการ์ดนี้</button>
+              <button class="btn danger"  id="btnRemove">ลบการ์ดนี้</button>
+              <button class="btn"         id="btnClose">ปิด</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Preview -->
+        <section class="card">
+          <div class="pad">
+            <h3>ตัวอย่างแบบเรียลไทม์</h3>
+            <article class="card" id="pvCard">
+              <img id="pvImg" src="" alt="preview" style="width:100%; max-height:260px; object-fit:cover">
+              <div class="pad">
+                <div class="meta"><span class="badge" id="pvBadge"></span><span id="pvDate"></span></div>
+                <h3 id="pvTitle"></h3>
+              </div>
+            </article>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (async function guardAdmin(){
+      try{
+        const me = await fetch('/api/auth/me',{cache:'no-store'}).then(r=>r.ok?r.json():null);
+        if(!me || me.role!=='admin'){ alert('หน้านี้สำหรับผู้ดูแลระบบเท่านั้น'); location.replace('index.html'); return; }
+        const who = document.getElementById('who'); if(who) who.textContent = `กำลังใช้งานในชื่อ: ${me.username} (role: ${me.role})`;
+        document.getElementById('logoutBtn').onclick = async ()=>{ await fetch('/logout',{method:'POST'}); location.href='index.html'; };
+      }catch(e){
+        alert('ไม่สามารถตรวจสอบสิทธิ์ได้'); location.replace('index.html');
+      }
+    })();
+
+    const $ = (s,r=document)=>r.querySelector(s);
+    const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
+    const markDirty = ()=>{ $('#saveState').textContent='มีการแก้ไข'; };
+    const markSaved = ()=>{ $('#saveState').textContent='บันทึกแล้ว'; setTimeout(()=>$('#saveState').textContent='พร้อมแก้ไข',1200); };
+    const gridHint  = $('#gridState');
+    function gDirty(){ gridHint.textContent='มีการแก้ไข'; }
+    function gSaved(){ gridHint.textContent='บันทึกแล้ว'; setTimeout(()=>gridHint.textContent='พร้อมแก้ไข',1200); }
+
+    async function getCfg(){ return await fetch('/api/config/home',{cache:'no-store'}).then(r=>r.json()); }
+    async function putCfg(obj){
+      await fetch('/api/config/home',{ method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(obj) });
+      markSaved(); gSaved();
+    }
+
+    // Ticker
+    function renderTicker(cfg){
+      const list = (cfg.ticker && cfg.ticker.length ? cfg.ticker : []).join('\n');
+      $('#tickerInput').value = list;
+      $('#tickerInput').addEventListener('input', markDirty);
+    }
+    document.getElementById('saveTicker').onclick = async ()=>{
+      const list = document.getElementById('tickerInput').value.split('\n').map(s=>s.trim()).filter(Boolean);
+      const cfg  = await getCfg(); cfg.ticker = list; await putCfg(cfg);
+    };
+
+    // Hero
+    function renderHero(cfg){
+      const h = cfg.hero || {};
+      document.getElementById('heroImg').value   = h.img || '';
+      document.getElementById('heroCat').value   = h.cat || '';
+      document.getElementById('heroTitle').value = h.title || '';
+      ['heroImg','heroCat','heroTitle'].forEach(id=>document.getElementById(id).addEventListener('input', markDirty));
+    }
+    document.getElementById('saveHero').onclick = async ()=>{
+      const cfg = await getCfg();
+      cfg.hero = { 
+        img:document.getElementById('heroImg').value.trim(), 
+        cat:document.getElementById('heroCat').value.trim(), 
+        title:document.getElementById('heroTitle').value.trim() 
+      };
+      await putCfg(cfg);
+    };
+
+    // Grid Manager
+    const listEl = document.getElementById('gridList');
+    const editor = document.getElementById('editorWrap');
+    let GRID = [];
+    let idx = -1;
+
+    function renderList(){
+      listEl.innerHTML = GRID.map((it,i)=>`
+        <div class="row" style="justify-content:space-between; border-bottom:1px solid rgba(255,255,255,.08); padding:6px 0">
+          <div><b>${it.title||'(ไม่มีหัวข้อ)'}</b><div class="muted">${it.slug||''} • ${it.badge||'ข่าวเกม'} • ${it.date||''}</div></div>
+          <div class="row" style="gap:6px">
+            <button class="btn" onclick="editCard(${i})">แก้ไข</button>
+            <button class="btn danger" onclick="removeCard(${i})">ลบ</button>
+            <button class="btn" onclick="moveCard(${i},-1)">↑</button>
+            <button class="btn" onclick="moveCard(${i},1)">↓</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    window.editCard = function(i){
+      idx = i; const it = GRID[i]||{};
+      document.getElementById('fSlug').value  = it.slug  || '';
+      document.getElementById('fTitle').value = it.title || '';
+      document.getElementById('fBadge').value = it.badge || 'ข่าวเกม';
+      document.getElementById('fDate').value  = it.date  || new Date().toISOString().slice(0,10);
+      document.getElementById('fImage').value = it.image || it.img || '';
+      updatePreview(); editor.style.display='';
+    };
+    window.removeCard = function(i){
+      if(!confirm('ยืนยันลบการ์ดนี้?')) return;
+      GRID.splice(i,1); editor.style.display='none'; renderList(); gDirty();
+    };
+    window.moveCard = function(i,dir){
+      const j = i+dir; if(j<0||j>=GRID.length) return;
+      [GRID[i],GRID[j]]=[GRID[j],GRID[i]]; renderList(); gDirty();
+    };
+
+    document.getElementById('btnAdd').onclick = ()=>{
+      GRID.push({ slug:'', title:'หัวข้อใหม่', badge:'ข่าวเกม', date:new Date().toISOString().slice(0,10), image:'' });
+      renderList(); gDirty();
+    };
+    document.getElementById('btnApply').onclick = ()=>{
+      if(idx<0) return;
+      GRID[idx] = {
+        slug:  document.getElementById('fSlug').value.trim(),
+        title: document.getElementById('fTitle').value.trim(),
+        badge: document.getElementById('fBadge').value.trim()||'ข่าวเกม',
+        date:  document.getElementById('fDate').value.trim(),
+        image: document.getElementById('fImage').value.trim()
+      };
+      renderList(); updatePreview(); gDirty();
+    };
+    document.getElementById('btnRemove').onclick = ()=>{ if(idx<0) return; removeCard(idx); };
+    document.getElementById('btnClose').onclick  = ()=>{ editor.style.display='none'; };
+
+    document.getElementById('btnSave').onclick = async ()=>{
+      const cfg = await getCfg(); cfg.grid = GRID; await putCfg(cfg);
+    };
+
+    function updatePreview(){
+      document.getElementById('pvTitle').textContent = document.getElementById('fTitle').value || '(ไม่มีหัวข้อ)';
+      document.getElementById('pvBadge').textContent = document.getElementById('fBadge').value || 'ข่าวเกม';
+      document.getElementById('pvDate').textContent  = document.getElementById('fDate').value  || '';
+      document.getElementById('pvImg').src = document.getElementById('fImage').value.trim() || 'https://picsum.photos/800/450?random=999';
+    }
+    ['#fTitle','#fBadge','#fDate','#fImage'].forEach(sel=>{
+      document.querySelector(sel).addEventListener('input', ()=>{ updatePreview(); gDirty(); });
+    });
+
+    (async function init(){
+      const me = await fetch('/api/auth/me',{cache:'no-store'}).then(r=>r.ok?r.json():null);
+      if(me && me.role==='admin'){ const who = document.getElementById('who'); if(who) who.textContent = `กำลังใช้งานในชื่อ: ${me.username} (role: ${me.role})`; }
+      const cfg = await getCfg();
+      renderTicker(cfg);
+      renderHero(cfg);
+      GRID = Array.isArray(cfg.grid) ? cfg.grid.slice() : [];
+      renderList();
+    })();
+  </script>
+</body>
+</html>
