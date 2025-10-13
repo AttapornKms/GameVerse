@@ -73,20 +73,7 @@
         <ul id="tickerList"></ul>
       </div>
 
-      <section class="container-carousel">
-        <div class="slider-wrapper">
-          <div class="slider" id="slider">
-            <% if (image && image.length > 0) { %> <% image.forEach((data, i) =>
-            { %>
-            <img id="slide-<%= i + 1 %>" src="<%= data %>" />
-            <% }) %> <% } else { %>
-            <img src="#" id="slide-1" />
-            <% } %>
-          </div>
-          <button class="slider-arrow left">&#10094;</button>
-          <button class="slider-arrow right">&#10095;</button>
-        </div>
-      </section>
+      
 
       <div class="layout">
         <!-- Main grid -->
