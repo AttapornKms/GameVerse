@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title><%= (article && article.title) ? article.title : 'บทความ' %> | GameVerse</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    #backToTop{
+      position:fixed; bottom:24px; right:24px;
+      width:48px; height:48px; border-radius:50%;
+      border:none; background:#fff; color:#333; font-size:24px;
+      cursor:pointer; box-shadow:0 4px 6px rgba(0,0,0,.2);
+      display:none; z-index:999; transition:transform .2s;
+    }
+    #backToTop:hover{ transform:scale(1.1); }
+  </style>
+</head>
+<body>
+  <main class="container" style="max-width:1000px;margin:24px auto;padding:0 16px;">
+    <p><a href="/">← กลับหน้าแรก</a></p>
+
+    <article class="card">
+      <img
+        src="<%= (article && article.image_url) ? article.image_url : 'https://picsum.photos/1200/600' %>"
+        alt="<%= (article && article.title) ? article.title : 'ภาพประกอบบทความ' %>"
+        loading="lazy" decoding="async"
+        style="max-width:100%;border-radius:12px;margin:12px 0;"
+      />
+
+      <div class="pad">
+        <div class="meta">
+          <span class="badge"><%= (article && article.badge) ? article.badge : 'ข่าวเกม' %></span>
+          <span><%= (article && article.pub_date) ? article.pub_date : '' %></span>
+        </div>
+
+        <h1><%= (article && article.title) ? article.title : '' %></h1>
+
+        <div style="line-height:1.7">
+          <%- (article && article.content) ? article.content : '<p>ไม่มีเนื้อหา</p>' %>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <button id="backToTop" type="button" aria-label="กลับขึ้นบนสุด" title="ขึ้นบนสุด">↑</button>
+
+  <script>
+    (function(){
+      const btn = document.getElementById('backToTop');
+      window.addEventListener('scroll', () => {
+        const y = document.documentElement.scrollTop || document.body.scrollTop;
+        btn.style.display = y > 200 ? 'block' : 'none';
+      });
+      btn.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    })();
+  </script>
+</body>
+</html>

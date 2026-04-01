@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GameVerse | ข่าวเกม & รีวิว</title>
+    <meta
+      name="description"
+      content="เทมเพลตเว็บข่าวเกมสไตล์แมกกาซีน: ฮีโร่สไลด์, ข่าวล่าสุด, หมวดหมู่, วิดีโอ, แถบกำลังฮิต, โหลดเพิ่มเติม"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/style.css" />
+    <style>
+      .card.locked {
+        position: relative;
+        cursor: pointer;
+      }
+      .card.locked::after {
+        content: "🔒 ต้องเข้าสู่ระบบ";
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        font-size: 12px;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.6);
+        color: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ───────────────── Header ───────────────── -->
+    <header>
+      <div class="container nav">
+        <a class="brand" href="/"><span class="logo"><img src="/Image/logoweb.png" alt="logo" /></span><span>GameVerse</span></a>
+        <nav class="menu" id="menu"></nav>
+
+        <!-- ปุ่ม/เมนู ผู้ใช้ -->
+        <div class="actions" id="authArea">
+          <a href="/login" class="login-btn" id="loginLink">เข้าสู่ระบบ</a>
+          <div class="userbox" id="userBox" style="display: none">
+            <div class="userchip" id="userChip">
+              <span style="font-size: 18px">👤</span>
+              <div>
+                <div id="chipName" style="line-height: 1">ผู้ใช้</div>
+                <div><span class="rolepill" id="chipRole">user</span></div>
+              </div>
+            </div>
+            <div class="dropdown" id="userMenu">
+              <div style="padding: 8px 12px; font-weight: 700" id="ddName">ชื่อผู้ใช้</div>
+              <a href="#" id="ddRole"><span>🔐</span><span>สิทธิ์ของคุณ: <b id="ddRoleVal">user</b></span></a>
+              <a href="/admin" id="adminLink" style="display: none"><span>🛠️</span><span>Admin Panel</span></a>
+              <a href="#" id="ddLogout" onclick="doLogout(event)"><span>↩️</span><span>ออกจากระบบ</span></a>
+            </div>
+          </div>
+        </div>
+
+        <button class="burger" id="burger" aria-label="เปิดเมนู">เมนู</button>
+      </div>
+    </header>
+
+    <!-- ───────────────── Main ───────────────── -->
+    <main class="container">
+      <!-- Ticker -->
+      <div class="ticker" aria-label="กำลังฮิต">
+        <span class="tag">กำลังฮิต</span>
+        <ul id="tickerList"></ul>
+      </div>
+
+      <!-- Hero carousel (รูปจาก cfg.hero.images) -->
+      <section class="container-carousel">
+        <div class="slider-wrapper">
+          <div class="slider" id="slider">
+            <% if (image && image.length > 0) { %>
+              <% image.forEach((data, i) => { %>
+                <img id="slide-<%= i + 1 %>" src="<%= data %>" alt="hero <%= i+1 %>" />
+              <% }) %>
+            <% } else { %>
+              <img src="https://picsum.photos/1200/500?random=1" id="slide-1" alt="hero" />
+            <% } %>
+          </div>
+          <button class="slider-arrow left" aria-label="ก่อนหน้า">&#10094;</button>
+          <button class="slider-arrow right" aria-label="ถัดไป">&#10095;</button>
+        </div>
+      </section>
+
+      <div class="layout">
+        <!-- Main grid -->
+        <section>
+          <h2 class="pill">📰 อัปเดตล่าสุด</h2>
+
+          <div id="filterBar">
+            <button class="filter-btn active" data-filter="all">ทั้งหมด</button>
+            <button class="filter-btn" data-filter="เกมใหม่">เกมใหม่</button>
+            <button class="filter-btn" data-filter="เกมมือถือ">เกมมือถือ</button>
+            <button class="filter-btn" data-filter="อัปเดตเกม">อัปเดตเกม</button>
+          </div>
+
+          <div class="grid" id="postGrid"></div>
+          <button class="load" id="loadMore" style="display: none">โหลดเพิ่มเติม</button>
+        </section>
+      </div>
+    </main>
+
+    <!-- ───────────────── Footer ───────────────── -->
+    <footer>
+      <div class="container foot">
+        <span>© <span id="year"></span> GameVerse</span>
+        <span>·</span>
+        <a href="#">เกี่ยวกับเรา</a>
+        <span>·</span>
+        <a href="#">นโยบายความเป็นส่วนตัว</a>
+      </div>
+    </footer>
+
+    <!-- ───────────────── Scripts ───────────────── -->
+    <script>
+      // ปีใน footer
+      document.getElementById("year").textContent = new Date().getFullYear();
+
+      // เมนูบนมือถือ
+      (function mobileMenu() {
+        const burger = document.getElementById("burger");
+        const menu = document.getElementById("menu");
+        burger?.addEventListener("click", () => {
+          const show = menu.style.display === "flex" ? "none" : "flex";
+          menu.style.display = show;
+          menu.style.flexDirection = "column";
+          menu.style.gap = "12px";
+        });
+      })();
+
+      // Toggle เมนูผู้ใช้
+      (function menuToggle() {
+        const chip = document.getElementById("userChip");
+        const dd = document.getElementById("userMenu");
+        chip?.addEventListener("click", () => {
+          dd.style.display = dd.style.display !== "block" ? "block" : "none";
+        });
+        document.addEventListener("click", (e) => {
+          const box = document.getElementById("userBox");
+          if (box && !box.contains(e.target)) dd.style.display = "none";
+        });
+      })();
+
+      // ───── State / API helpers
+      let ME = null;           // เก็บสถานะผู้ใช้ปัจจุบัน
+      let HOME_CFG = null;     // เก็บ config หน้าแรก
+      let ALL_GRID_ITEMS = []; // เก็บรายการการ์ดทั้งหมด (ใช้กับฟิลเตอร์)
+
+      async function fetchMe() {
+        try {
+          const r = await fetch("/api/auth/me", { cache: "no-store" });
+          return r.ok ? r.json() : null;
+        } catch { return null; }
+      }
+
+      async function loadHomeCfg() {
+        try {
+          const r = await fetch("/api/config/home", { cache: "no-store" });
+          return await r.json();
+        } catch { return {}; }
+      }
+
+      // ───── Ticker
+      function renderTicker(cfg) {
+        const ul = document.getElementById("tickerList");
+        ul.innerHTML = "";
+        const list = Array.isArray(cfg?.ticker) ? cfg.ticker : [];
+        if (!list.length) return;
+        list.forEach(text => {
+          const li = document.createElement("li");
+          li.textContent = text;
+          ul.appendChild(li);
+        });
+      }
+
+      // ───── สร้างการ์ดบทความ
+      function createCard(item, isLoggedIn) {
+        const el = document.createElement("article");
+        el.className = "card";
+        el.innerHTML = `
+          <img src="${item.image || item.img || `https://picsum.photos/800/450?random=${Math.floor(Math.random()*1000)}`}" alt="post"/>
+          <div class="pad">
+            <div class="meta"><span class="badge">${item.badge || "ข่าวเกม"}</span><span>${item.date || ""}</span></div>
+            <h3>${item.title || ""}</h3>
+          </div>`;
+
+        if (item.slug) {
+          if (!isLoggedIn) {
+            // guest → ล็อกการ์ด + พาไปหน้า login พร้อม next=
+            el.classList.add("locked");
+            el.title = "ต้องเข้าสู่ระบบก่อนอ่านข่าวนี้";
+            el.addEventListener("click", () => {
+              const next = `/article/${encodeURIComponent(item.slug)}`;
+              location.href = `/login?next=${encodeURIComponent(next)}`;
+            });
+          } else {
+            // user → เข้าอ่านบทความได้เลย
+            el.addEventListener("click", () => {
+              location.href = `/article/${encodeURIComponent(item.slug)}`;
+            });
+          }
+        }
+        return el;
+      }
+
+      function displayGrid(items, isLoggedIn) {
+        const grid = document.getElementById("postGrid");
+        if (!grid) return;
+        grid.innerHTML = "";
+        items.forEach(item => grid.appendChild(createCard(item, isLoggedIn)));
+      }
+
+      async function renderGrid() {
+        // ใช้ HOME_CFG ที่โหลดไว้ เพื่อลดคำขอซ้ำ
+        const items = Array.isArray(HOME_CFG?.grid) ? HOME_CFG.grid : [];
+        ALL_GRID_ITEMS = items.slice();
+        displayGrid(items, !!ME);
+      }
+
+      // ───── Auth UI
+      async function syncAuthUI() {
+        const me = await fetchMe();
+        ME = me;
+
+        const loginLink = document.getElementById("loginLink");
+        const userBox   = document.getElementById("userBox");
+        const chipName  = document.getElementById("chipName");
+        const chipRole  = document.getElementById("chipRole");
+        const ddName    = document.getElementById("ddName");
+        const ddRoleVal = document.getElementById("ddRoleVal");
+        const adminLink = document.getElementById("adminLink");
+
+        if (me) {
+          loginLink.style.display = "none";
+          userBox.style.display   = "";
+          chipName.textContent    = me.fullname || me.username || "ผู้ใช้";
+          chipRole.textContent    = me.role || "user";
+          ddName.textContent      = me.username || "ผู้ใช้";
+          ddRoleVal.textContent   = me.role || "user";
+          adminLink.style.display = me.role === "admin" || me.role === "editor" ? "" : "none";
+        } else {
+          userBox.style.display   = "none";
+          loginLink.style.display = "";
+          adminLink.style.display = "none";
+        }
+      }
+
+      // ───── Slider (hero)
+      (function initSlider() {
+        const slider = document.getElementById("slider");
+        if (!slider) return;
+        const slides = slider.querySelectorAll("img");
+        const leftArrow = document.querySelector(".slider-arrow.left");
+        const rightArrow = document.querySelector(".slider-arrow.right");
+
+        let index = 0;
+        const total = slides.length || 1;
+
+        function showSlide(i) {
+          index = i;
+          slider.style.transform = `translateX(-${index * 100}%)`;
+        }
+        function autoSlide() {
+          index = (index + 1) % total;
+          showSlide(index);
+        }
+        let slideInterval = setInterval(autoSlide, 3000);
+
+        leftArrow?.addEventListener("click", () => {
+          clearInterval(slideInterval);
+          index = (index - 1 + total) % total;
+          showSlide(index);
+          slideInterval = setInterval(autoSlide, 3000);
+        });
+        rightArrow?.addEventListener("click", () => {
+          clearInterval(slideInterval);
+          index = (index + 1) % total;
+          showSlide(index);
+          slideInterval = setInterval(autoSlide, 3000);
+        });
+      })();
+
+      // ───── ฟิลเตอร์
+      function initFilters() {
+        document.querySelectorAll(".filter-btn").forEach(btn => {
+          btn.addEventListener("click", () => {
+            document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+
+            const filter = btn.dataset.filter;
+            const list = filter === "all" ? ALL_GRID_ITEMS : ALL_GRID_ITEMS.filter(i => i.badge === filter);
+            displayGrid(list, !!ME);
+          });
+        });
+      }
+
+      // ───── Logout
+      function doLogout(e) {
+        e?.preventDefault();
+        fetch("/logout", { method: "POST" }).then(() => location.reload());
+      }
+      window.doLogout = doLogout;
+
+      // ───── Boot
+      (async function boot() {
+        // โหลด config และ auth ก่อน
+        HOME_CFG = await loadHomeCfg();
+        await syncAuthUI();
+
+        // วาดส่วนต่าง ๆ
+        renderTicker(HOME_CFG);
+        await renderGrid();
+        initFilters();
+      })();
+    </script>
+  </body>
+</html>
